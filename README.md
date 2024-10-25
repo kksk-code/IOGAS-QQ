@@ -6,7 +6,7 @@
 
 #### 实现流程：  
 
-github发起issue ，程序接收issue的json数据， webshock连接qq机器人， 通过api发送消息，设置精华消息，以及发送群公告  
+github发起issue ，程序接收issue的json数据， WebSocket连接qq机器人， 通过api发送消息，设置精华消息，以及发送群公告  
 
 #### 感谢：
 1. github webhook: https://docs.github.com/zh/webhooks
