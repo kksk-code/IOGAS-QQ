@@ -1,0 +1,72 @@
+name: "新任务发布"
+description: '开发任务等'
+title: "[任务]: "
+labels: ["task"]
+body:
+  - type: input
+    attributes:
+      label: '如何认领'
+      description: '请详细如何领取任务'
+      value: '请直接在下方回复，我会把 issue 的 assignees 设置为你'
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: '需求描述'
+      description: '请详细描述你的任务背景，具体需求'
+      placeholder: |
+        例如:
+
+        我们希望用户在创建 issue 时要求必须填写以下内容(暂定)
+        - 作者: 昵称/github_id/xxx
+        - 类型: 可以是复选框, A/B/xxx/其他
+        - 标题
+        - 内容
+
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: '实现方式'
+      description: '请为任务认领者提供大致的实现思路'
+      placeholder: '例如: Github 支持在 .github/ 文件夹下创建一个模板文件规定 issue 的格式'
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: '文档资料'
+      description: '为任务认领者提供尽可能全面的资料，已列表形式列出'
+      placeholder: |
+        例如：
+        - github 文档: docs.github.com/zh/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: '难度'
+      options:
+        - 简单 (什么都不会也能学习做)
+        - 中等 (需要学习多种知识，但是工作量不大 1 周内可以完成)
+        - 困难（工作量大，或技术方向困难）
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: '能力要求'
+      description: '完成任务需要学习的能力'
+      placeholder: |
+        例如：
+        - 需要能够正常访问 github, 并注册账号
+        - 知道 webhook 的概念
+        - 了解后端(例如 fastapi)基础使用方法
+        - 对编写 qq 机器人感兴趣
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: '关闭 Issue 前请先确认以下内容'
+      description: '申请人不需要填写'
+      options:
+        - label: '代码是否上传：<PR 链接>'
+    validations:
+      required: false

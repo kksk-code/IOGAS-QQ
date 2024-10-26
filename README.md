@@ -8,6 +8,12 @@
 
 github发起issue ，程序接收issue的json数据， WebSocket连接qq机器人， 通过api发送消息，设置精华消息，以及发送群公告  
 
+#### 使用教程（待完成）
+1. 内网穿透部分使用免费的ngrok内网穿透（公网ip或frp选手请绕路）
+```bash
+ngrok http http://localhost:8080
+```
+2. 
 #### 感谢：
 1. github webhook: https://docs.github.com/zh/webhooks
 2. onebot（统一的聊天机器人应用接口标准）: https://onebot.dev/
