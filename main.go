@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -84,16 +86,31 @@ func handleWebhook(c *gin.Context) {
 	body, _ := issue["body"].(string)
 	url, _ := issue["html_url"].(string)
 	// 构建要发送的消息
+	hbody := handleMarkdown(body)
+	class, date, time, _title, err := extractIssueParams(title)
+	if err != nil {
+		fmt.Println("Error extractIssueParams:", err)
+		return
+	}
+
+	var titlet string
+	var bodyt string
+	titlet = "[" + class + "]" + _title
+	if class == "茶话会" {
+		bodyt = "日期：" + date + " " + "时长：" + time + "\n" + hbody
+	} else {
+		bodyt = ""
+	}
 	msg := map[string]string{
-		"body":     body,
-		"title":    title,
+		"body":     bodyt,
+		"title":    titlet,
 		"username": username,
 		"url":      url,
 	}
 	//群号
-	group_id := 914590482
+	group_id := 12345678
 	// 通过 WebSocket 向 QQ 机器人发送消息
-
+	// test := true
 	if action == "opened" {
 		message_id, err := sendMessageToWebSocket(msg, int64(group_id))
 
@@ -152,7 +169,7 @@ func sendMessageToWebSocket(message map[string]string, group_id int64) (int32, e
 
 	// 将github issue中的消息利用接口发送到qq
 
-	body := "标题：" + message["title"] + "\n" + "宣讲人：" + message["username"] + "\n" + "内容：" + message["body"] + "\n" + "链接：" + message["url"]
+	body := message["title"] + "\n" + message["body"] + "\n" + "链接：" + message["url"]
 	msg := PrivateMessage{
 		Action: "send_group_msg",
 		Params: MessageParams{
@@ -247,7 +264,7 @@ func setGroupNotice(message map[string]string, groupID int64) error {
 	}
 	defer ws.Close()
 
-	body := "标题：" + message["title"] + "\n" + "宣讲人：" + message["username"] + "\n" + "内容：" + message["body"] + "\n" + "链接：" + message["url"]
+	body := message["title"] + "\n" + message["body"] + "\n" + "链接：" + message["url"]
 
 	req := Group_notice{
 		Action: "_send_group_notice",
@@ -277,4 +294,143 @@ func setGroupNotice(message map[string]string, groupID int64) error {
 	time.Sleep(1 * time.Second)
 
 	return nil
+}
+
+// 清理 Markdown 文本，处理 # 和 -
+func cleanMarkdown(markdown string) string {
+	// 处理标题部分，去除开头的 # 符号
+	reTitle := regexp.MustCompile(`^#+\s*`)
+	markdown = reTitle.ReplaceAllString(markdown, "")
+
+	// 将 - 替换为 ·
+	markdown = strings.ReplaceAll(markdown, "-", "·")
+
+	return markdown
+}
+
+func handleMarkdown(markdown string) string {
+	// 分割 Markdown 文本
+	lines := strings.Split(markdown, "\n")
+
+	// 定义一个字符串来存储结果
+	var result strings.Builder
+
+	// 标记“内容类型”是否处理
+	inContentType := false
+
+	// 遍历每一行并进行处理
+	for i := 0; i < len(lines); i++ {
+		// 如果遇到 "关闭 Issue 前请先确认以下内容"，则停止处理
+		if strings.Contains(lines[i], "关闭 Issue 前请先确认以下内容") {
+			break
+		}
+
+		// 如果当前行是 "### 作者"
+		if strings.TrimSpace(lines[i]) == "### 作者" {
+			// 找到下一个非空行，将其视为“作者”的内容
+			for j := i + 1; j < len(lines); j++ {
+				if strings.TrimSpace(lines[j]) != "" {
+					authorLine := "宣讲人：" + strings.TrimSpace(lines[j])
+					result.WriteString(authorLine + "\n")
+					i = j // 更新 i，跳过已处理的行
+					break
+				}
+			}
+			continue
+		}
+
+		// 如果当前行是 "### 内容类型"
+		if strings.TrimSpace(lines[i]) == "### 内容类型" {
+			inContentType = true
+			continue
+		}
+
+		// 如果在 "内容类型" 部分，处理选项
+		if inContentType {
+			if strings.Contains(lines[i], "- [X] 技术类") {
+				result.WriteString("内容类型：技术类\n")
+				continue
+			} else if strings.Contains(lines[i], "- [X] 其他") {
+				result.WriteString("内容类型：其他\n")
+				inContentType = false // 处理完内容类型，退出
+				continue
+			} else if strings.Contains(lines[i], "- [ ]") {
+				// 忽略未选中的选项
+				if !strings.Contains(lines[i+1], "- [X]") {
+					inContentType = false
+				}
+				continue
+			}
+		}
+
+		// 如果当前行是 "### 摘要/大纲"
+		if strings.TrimSpace(lines[i]) == "### 摘要/大纲" {
+			result.WriteString("摘要/大纲：\n")
+			continue
+		}
+
+		// 如果当前行是 "### 补充说明"
+		if strings.TrimSpace(lines[i]) == "### 补充说明" {
+			// 找到下一个非空行，将其视为“作者”的内容
+			for j := i + 1; j < len(lines); j++ {
+				if strings.TrimSpace(lines[j]) != "" {
+					if strings.TrimSpace(lines[j]) == "_No response_" {
+						result.WriteString("补充说明：无\n")
+						i = j // 更新 i，跳过已处理的行
+						break
+					} else {
+						result.WriteString("补充说明：\n")
+						break
+					}
+				}
+			}
+			continue
+		}
+
+		// 清理当前行
+		cleaned := cleanMarkdown(lines[i])
+
+		// 如果清理后的行不为空，添加到结果中
+		if cleaned != "" {
+			result.WriteString(cleaned + "\n")
+		}
+	}
+
+	// 将最终结果返回为字符串
+	return result.String()
+}
+
+// 提取 issue 标题中的参数
+func extractIssueParams(title string) (string, string, string, string, error) {
+	// 先匹配第一个方括号内的内容
+	initialRe := regexp.MustCompile(`^\[(.*?)\]`)
+	initialMatch := initialRe.FindStringSubmatch(title)
+
+	// 只要有匹配结果就继续处理
+	if len(initialMatch) > 0 {
+		firstParam := initialMatch[1]
+
+		// 如果第一个方括号内容是 "茶话会"，按照四个参数提取
+		if firstParam == "茶话会" {
+			// 匹配 [分类][日期][时长] 标题 格式
+			fullRe := regexp.MustCompile(`\[(.*?)\]\s*\[(.*?)\]\s*\[(.*?)\]\s*(.*)`)
+			matches := fullRe.FindStringSubmatch(title)
+
+			if len(matches) == 5 {
+				return matches[1], matches[2], matches[3], matches[4], nil
+			}
+			return "", "", "", "", fmt.Errorf("failed to extract parameters in '茶话会' format")
+		}
+
+		// 如果不是 "茶话会"，按照 [分类] 标题 格式提取
+		simpleRe := regexp.MustCompile(`\[(.*?)\]\s*(.*)`)
+		matches := simpleRe.FindStringSubmatch(title)
+
+		if len(matches) == 3 {
+			return matches[1], "", "", matches[2], nil
+		}
+		return "", "", "", "", fmt.Errorf("failed to extract parameters in '[分类] 标题' format")
+	}
+
+	return "", "", "", "", fmt.Errorf("failed to extract initial parameter")
 }
