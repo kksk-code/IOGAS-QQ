@@ -3,7 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -19,6 +22,12 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true // 允许所有来源的连接，实际使用中应加以限制
 	},
+}
+
+type Config struct {
+	ServerPort   string `json:"server_port"`
+	GroupID      int64  `json:"group_id"`
+	WebSocketURL string `json:"websocket_url"`
 }
 
 type PrivateMessage struct {
@@ -52,7 +61,17 @@ type Group_notice struct {
 	Echo   string         `json:"echo"`
 }
 
+var config *Config
+
 func main() {
+
+	// 加载配置文件
+	var err error
+	config, err = loadConfig("config.json")
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
 	// 初始化 Gin 路由
 	router := gin.Default()
 
@@ -63,7 +82,7 @@ func main() {
 	router.GET("/ws", handleWebSocket)
 
 	// 运行服务器
-	router.Run(":8080")
+	router.Run(":" + config.ServerPort)
 }
 
 // 处理 GitHub Webhook 请求
@@ -108,7 +127,7 @@ func handleWebhook(c *gin.Context) {
 		"url":      url,
 	}
 	//群号
-	group_id := 12345678
+	group_id := config.GroupID
 	// 通过 WebSocket 向 QQ 机器人发送消息
 	// test := true
 	if action == "opened" {
@@ -160,7 +179,7 @@ func handleWebSocket(c *gin.Context) {
 // 向 WebSocket 发送消息
 func sendMessageToWebSocket(message map[string]string, group_id int64) (int32, error) {
 	// 连接到 QQ 机器人的 WebSocket 服务器
-	ws, _, err := websocket.DefaultDialer.Dial("ws://localhost:3001/", nil) // 替换为实际 QQ 机器人的 WebSocket 地址
+	ws, _, err := websocket.DefaultDialer.Dial(config.WebSocketURL, nil) // 替换为实际 QQ 机器人的 WebSocket 地址
 	if err != nil {
 		fmt.Println("Dial Error:", err)
 		return 0, err
@@ -257,7 +276,7 @@ func setEssenceMsg(messageID int32) error {
 // 向 WebSocket 发送群公告设置请求
 func setGroupNotice(message map[string]string, groupID int64) error {
 	// 连接到 QQ 机器人的 WebSocket 服务器
-	ws, _, err := websocket.DefaultDialer.Dial("ws://localhost:3001/", nil) // 替换为实际 QQ 机器人的 WebSocket 地址
+	ws, _, err := websocket.DefaultDialer.Dial(config.WebSocketURL, nil) // 替换为实际 QQ 机器人的 WebSocket 地址
 	if err != nil {
 		fmt.Println("Dial Error:", err)
 		return err
@@ -433,4 +452,28 @@ func extractIssueParams(title string) (string, string, string, string, error) {
 	}
 
 	return "", "", "", "", fmt.Errorf("failed to extract initial parameter")
+}
+
+// 加载配置文件
+func loadConfig(filename string) (*Config, error) {
+	// 打开文件
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// 读取文件内容
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	// 解析 JSON
+	var config Config
+	if err := json.Unmarshal(bytes, &config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
 }
