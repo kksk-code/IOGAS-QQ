@@ -19,18 +19,16 @@ all: build
 .PHONY: build
 build: clean
 	@mkdir -p $(BUILD_DIR)
-	$(foreach os,$(OS_LIST), \
-		$(foreach arch,$(ARCH_LIST), \
-			GOOS=$(os) GOARCH=$(arch) $(GO) build -o $(BUILD_DIR)/$(APP_NAME)-$(os)-$(arch) $(SRC_DIR);))
+	$(foreach os, $(OS_LIST), \
+		$(foreach arch, $(ARCH_LIST), \
+			GOOS=$(os) GOARCH=$(arch) $(GO) build -o $(BUILD_DIR)/$(APP_NAME)-$(os)-$(arch) $(SRC_DIR); \
+		) \
+	)
 
 # 清理生成的二进制文件
 .PHONY: clean
 clean:
-ifeq ($(OS),Windows_NT)
-	@if exist $(BUILD_DIR) rmdir /S /Q $(BUILD_DIR)
-else
 	@rm -rf $(BUILD_DIR)
-endif
 
 # 针对特定平台进行编译
 .PHONY: linux

@@ -33,7 +33,6 @@ tmux new -s synctoqq
 ```bash
 ngrok http http://localhost:8080
 ```
-2. 
 #### 感谢：
 1. github webhook: https://docs.github.com/zh/webhooks
 2. onebot（统一的聊天机器人应用接口标准）: https://onebot.dev/
