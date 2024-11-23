@@ -41,6 +41,14 @@ func handleWebhook(c *gin.Context) {
 		return
 	}
 
+	filename := date + title + ".png"
+	// 获取图片
+	_, err = getimg(body, filename)
+	if err != nil {
+		fmt.Println("Error getimg:", err)
+		return
+	}
+	// 构建消息
 	var titlet string
 	var bodyt string
 	titlet = "[" + class + "]" + _title

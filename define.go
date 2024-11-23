@@ -19,6 +19,7 @@ type Config struct {
 	ServerPort   string `json:"server_port"`
 	GroupID      int64  `json:"group_id"`
 	WebSocketURL string `json:"websocket_url"`
+	MdToImgURL   string `json:"md_to_img_url"`
 }
 
 type PrivateMessage struct {
