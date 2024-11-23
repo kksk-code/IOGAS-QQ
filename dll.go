@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -13,10 +14,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func getimg(input, filename string) (string, error) {
+func getimg(input, filename, date string) (string, error) {
+	body := ImageInput{Input: input}
 	url := config.MdToImgURL
-	data := []byte(fmt.Sprintf(`{"input": "%s"}`, input))
-
+	data, err := json.Marshal(body)
+	if err != nil {
+		fmt.Println("Error marshalling JSON:", err)
+		return "", err
+	}
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 	if err != nil {
 		fmt.Println("Error creating request:", err)
@@ -38,7 +43,14 @@ func getimg(input, filename string) (string, error) {
 			return "", fmt.Errorf("error reading response body: %v", err)
 		}
 
-		err = ioutil.WriteFile(filename, body, 0644)
+		// 创建路径
+		path := "./images/" + date
+		err = os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			return "", fmt.Errorf("error creating directory: %v", err)
+		}
+
+		err = ioutil.WriteFile("./images/"+date+"/"+filename, body, 0644)
 		if err != nil {
 			return "", fmt.Errorf("error saving image: %v", err)
 		}
@@ -188,12 +200,12 @@ func sendMessageToWebSocket(imgfile string, message map[string]string, group_id 
 
 	// 将 github issue中的消息利用接口发送到qq
 
-	body := message["title"] + "\n" + message["body"] + "\n" + "链接：" + message["url"] + "\n感兴趣请加入后援群 291694149 交流"
+	//body := message["title"] + "\n" + message["body"] + "\n" + "链接：" + message["url"] + "\n感兴趣请加入后援群 291694149 交流"
 	msg := PrivateMessage{
 		Action: "send_group_msg",
 		Params: MessageParams{
-			Group_id: group_id,                                                                                                            // 替换为实际的 QQ 用户 ID
-			Message:  fmt.Sprintf(`[{"type": "text", "data": {"text": "%v"}}, {"type": "image", "data": {"file": "%v"}}]`, body, imgfile), // 要发送的消息内容
+			Group_id: group_id,                                                                               // 替换为实际的 QQ 用户 ID
+			Message:  "[CQ:image,file=http://localhost:8080/images/" + message["date"] + "/" + imgfile + "]", // 要发送的消息内容
 		},
 		Echo: "send_msg",
 	}

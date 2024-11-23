@@ -24,6 +24,9 @@ func main() {
 	// WebSocket 路由
 	router.GET("/ws", handleWebSocket)
 
+	// 静态图片文件路由
+	router.Static("/images", "./images")
+
 	// 运行服务器
 	router.Run(":" + config.ServerPort)
 }

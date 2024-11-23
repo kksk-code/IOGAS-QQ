@@ -1,7 +1,7 @@
 {
     "server_port": "8080",
-    "group_id": 12345678,
+    "group_id": 914590482,
     "websocket_url": "ws://localhost:3001/",
-    "md_to_img_url": "http://localhost:3002/"
+    "md_to_img_url": "http://localhost:8000/"
 }
   

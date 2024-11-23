@@ -8,7 +8,7 @@ GO := go
 GO_FLAGS :=
 
 # 目标平台和架构
-OS_LIST := linux darwin windows
+OS_LIST := linux windows
 ARCH_LIST := amd64 arm64
 
 # 默认目标：编译所有

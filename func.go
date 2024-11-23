@@ -37,9 +37,9 @@ func handleWebhook(c *gin.Context) {
 		return
 	}
 
-	filename := date + title + ".png"
+	filename := _title + ".png"
 	// 获取图片
-	_, err = getimg(body, filename)
+	_, err = getimg("## "+_title+"\r\n"+body, filename, date)
 	if err != nil {
 		fmt.Println("Error getimg:", err)
 		return
@@ -59,6 +59,7 @@ func handleWebhook(c *gin.Context) {
 		"title":    titlet,
 		"username": username,
 		"url":      url,
+		"date":     date,
 	}
 	//群号
 	group_id := config.GroupID

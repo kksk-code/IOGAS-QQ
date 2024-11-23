@@ -53,4 +53,8 @@ type Group_notice struct {
 	Echo   string         `json:"echo"`
 }
 
+type ImageInput struct {
+	Input string `json:"input"`
+}
+
 var config *Config
