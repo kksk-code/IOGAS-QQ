@@ -38,22 +38,27 @@ func handleWebhook(c *gin.Context) {
 	}
 
 	filename := _title + ".png"
-	// 获取图片
-	_, err = getimg("## "+_title+"\r\n"+body, filename, date)
-	if err != nil {
-		fmt.Println("Error getimg:", err)
-		return
-	}
+
 	// 构建消息
 	var titlet string
 	var bodyt string
+	var ititle string
 	titlet = "[" + class + "]" + _title
 	switch class {
 	case "茶话会":
 		bodyt = "日期：" + date + " " + "时长：" + time + "\n" + hbody
+		ititle = "## " + _title + "\r\n" + "日期：" + date + " " + "时长：" + time + "\r\n"
 	default:
 		bodyt = ""
 	}
+
+	// 获取图片
+	_, err = getimg(ititle+body, filename, date)
+	if err != nil {
+		fmt.Println("Error getimg:", err)
+		return
+	}
+
 	msg := map[string]string{
 		"body":     bodyt,
 		"title":    titlet,
