@@ -37,7 +37,7 @@ func handleWebhook(c *gin.Context) {
 		return
 	}
 
-	filename := _title + ".png"
+	filename := cleanFileName(_title) + ".png"
 
 	// 构建消息
 	var titlet string
@@ -50,10 +50,12 @@ func handleWebhook(c *gin.Context) {
 		ititle = "## " + _title + "\r\n" + "日期：" + date + " " + "时长：" + time + "\r\n"
 	default:
 		bodyt = ""
+		timeinit()
+		ititle = "## " + class + _title + "\r\n" + "日期：" + currentDate + "\r\n"
 	}
 
 	// 获取图片
-	_, err = getimg(ititle+body, filename, date)
+	_, err = getimg(ititle+body, filename)
 	if err != nil {
 		fmt.Println("Error getimg:", err)
 		return
@@ -71,7 +73,7 @@ func handleWebhook(c *gin.Context) {
 	// 通过 WebSocket 向 QQ 机器人发送消息
 	// test := true
 	if action == "opened" {
-		message_id, err := sendMessageToWebSocket(filename, msg, int64(group_id))
+		message_id, err := sendMessageToWebSocket(filename, int64(group_id))
 
 		if err != nil {
 			fmt.Println("Error sending group message:", err)

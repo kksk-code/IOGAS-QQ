@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func getimg(input, filename, date string) (string, error) {
+func getimg(input, filename string) (string, error) {
 	body := ImageInput{Input: input}
 	url := config.MdToImgURL
 	data, err := json.Marshal(body)
@@ -44,13 +44,14 @@ func getimg(input, filename, date string) (string, error) {
 		}
 
 		// 创建路径
+		date := time.Now().Format("2006-01-02")
 		path := "./images/" + date
 		err = os.MkdirAll(path, os.ModePerm)
 		if err != nil {
 			return "", fmt.Errorf("error creating directory: %v", err)
 		}
 
-		err = ioutil.WriteFile("./images/"+date+"/"+filename, body, 0644)
+		err = ioutil.WriteFile(path+"/"+filename, body, 0644)
 		if err != nil {
 			return "", fmt.Errorf("error saving image: %v", err)
 		}
@@ -189,7 +190,7 @@ func cleanMarkdown(markdown string) string {
 }
 
 // 向 WebSocket 发送消息
-func sendMessageToWebSocket(imgfile string, message map[string]string, group_id int64) (int32, error) {
+func sendMessageToWebSocket(imgfile string, group_id int64) (int32, error) {
 	// 连接到 QQ 机器人的 WebSocket 服务器
 	ws, _, err := websocket.DefaultDialer.Dial(config.WebSocketURL, nil) // 替换为实际 QQ 机器人的 WebSocket 地址
 	if err != nil {
@@ -200,12 +201,13 @@ func sendMessageToWebSocket(imgfile string, message map[string]string, group_id 
 
 	// 将 github issue中的消息利用接口发送到qq
 
+	date := time.Now().Format("2006-01-02")
 	//body := message["title"] + "\n" + message["body"] + "\n" + "链接：" + message["url"] + "\n感兴趣请加入后援群 291694149 交流"
 	msg := PrivateMessage{
 		Action: "send_group_msg",
 		Params: MessageParams{
-			Group_id: group_id,                                                                               // 替换为实际的 QQ 用户 ID
-			Message:  "[CQ:image,file=http://localhost:8080/images/" + message["date"] + "/" + imgfile + "]", // 要发送的消息内容
+			Group_id: group_id,                                                                    // 替换为实际的 QQ 用户 ID
+			Message:  "[CQ:image,file=http://localhost:8080/images/" + date + "/" + imgfile + "]", // 要发送的消息内容
 		},
 		Echo: "send_msg",
 	}
@@ -245,4 +247,15 @@ func sendMessageToWebSocket(imgfile string, message map[string]string, group_id 
 		}
 	}
 
+}
+
+// 清理文件名，去除非法字符
+func cleanFileName(fileName string) string {
+	// 定义非法字符的正则表达式
+	re := regexp.MustCompile(`[<>:"/\\|?*]`)
+	// 替换非法字符为空字符串
+	cleanedFileName := re.ReplaceAllString(fileName, "")
+	// 去除文件名开头和结尾的空格
+	cleanedFileName = strings.TrimSpace(cleanedFileName)
+	return cleanedFileName
 }

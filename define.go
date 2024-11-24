@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -58,3 +59,9 @@ type ImageInput struct {
 }
 
 var config *Config
+
+var currentDate string
+
+func timeinit() {
+	currentDate = time.Now().Format("2006/01/02")
+}
